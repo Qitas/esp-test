@@ -94,7 +94,7 @@ void IRAM_ATTR test_task(void *arg)
             // assert(memcmp(store_data, read_data, sizeof(read_data)) == 0);
             for (int i = 0; i < sizeof(test_buff); i++) {
                 if(test_buff[i] != 0xFF){
-                    ESP_LOGI(TAG, "erase sector %d data err[%d/%d]: %s",test_sector, flash_tested_round,test_round , read_data);
+                    ESP_LOGI(TAG, "erase sector %d data err[%d/%d]: %d!=%d",test_sector, flash_tested_round,test_round , test_buff[i] , test_data[i]);
                     memset(uart_info, 0x0, sizeof(uart_info));
                     sprintf(uart_info, "test sector %d:erase err[%d/%d]",test_sector, flash_tested_round,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
@@ -178,22 +178,24 @@ void IRAM_ATTR uart_task(void *arg)
                 test_sector = 0;
                 flash_tested_round = 0;
                 for (int i = 12; i < len; i++) {
-                    if(flag == 0 && data[i]==' '){
+                    if(flag <= 1 && data[i]==' '){
                         flag = 1;
                     }
-                    if(flag==1 && data[i]>='0' && data[i]<='9'){
+                    else if(flag && flag<=2 && data[i]>='0' && data[i]<='9'){
                         test_sector *= 10;
                         test_sector += data[i]-'0';
-                    }
-                    else if(flag == 1 && data[i]==' '){
                         flag = 2;
                     }
-                    else if(flag==2 && data[i]>='0' && data[i]<='9'){
+                    else if(flag>=2 && data[i]==' '){
+                        flag = 3;
+                    }
+                    else if(flag>=3 && flag<=4 && data[i]>='0' && data[i]<='9'){
                         test_round *= 10;
                         test_round += data[i]-'0';
+                        flag = 4;
                     }
-                    else if(flag==2){
-                        flag = 3;
+                    else if(flag==4){
+                        flag = 5;
                     }
                 }
                 if(test_round){
