@@ -49,10 +49,13 @@ static uint32_t test_round =  0;
 static uint32_t flash_tested_round = 0;
 
 #define BUF_SIZE    (1024)
-// #define BLOCK_SIZE  128
+#define BLOCK_SIZE   128
+DRAM_ATTR static char test_data[BLOCK_SIZE];
+DRAM_ATTR static char test_buff[BLOCK_SIZE];
+// #define SPI_FLASH_SEC_SIZE  4096    /**< SPI Flash sector size */
 
 
-static void test_task(void *arg)
+void IRAM_ATTR test_task(void *arg)
 {
     /*
     * This example uses the partition table from ../partitions_example.csv. For reference, its contents are as follows:
@@ -69,10 +72,16 @@ static void test_task(void *arg)
 
     // static char store_data[] = "ESP Partition Operations Test (Read, Erase, Write)";
     // static char read_data[BLOCK_SIZE];
-    static char store_data[] = "ESP-IDF Partition Operations Test (Read, Erase, Write)";
-    static char read_data[sizeof(store_data)];
+    // static char store_data[] = "ESP-IDF Partition Operations Test (Read, Erase, Write)";
+    // static char read_data[sizeof(store_data)];
     char uart_info[30];
+        for (int i = 0; i < BLOCK_SIZE; i++) {
+            test_data[i] = i+1;
+        }
     while (1) {
+        for (int i = 0; i < BLOCK_SIZE; i++) {
+            test_buff[i] = 0;
+        }
         // Erase entire partition
         // memset(read_data, 0xFF, sizeof(read_data));
         // ESP_ERROR_CHECK(esp_partition_erase_range(partition, 0, partition->size));
@@ -81,38 +90,48 @@ static void test_task(void *arg)
         if(flash_tested_round<test_round) {
             ESP_ERROR_CHECK(esp_partition_erase_range(partition, 0, SPI_FLASH_SEC_SIZE));
             // Read back the data (should all now be 0xFF's)
-            memset(store_data, 0xFF, sizeof(read_data));
-            ESP_ERROR_CHECK(esp_partition_read(partition, 0, read_data, sizeof(read_data)));
+            ESP_ERROR_CHECK(esp_partition_read(partition, 0, test_buff, sizeof(test_buff)));
             // assert(memcmp(store_data, read_data, sizeof(read_data)) == 0);
-            if (!memcmp(store_data, read_data, sizeof(read_data))) {
-                ESP_LOGI(TAG, "Erase data err[%d/%d]: %s", flash_tested_round,test_round , read_data);
-                memset(uart_info, 0x0, sizeof(uart_info));
-                sprintf(uart_info, "test erase err:%d/%d", flash_tested_round,test_round);
-                uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
-                test_round = 0;
+            for (int i = 0; i < sizeof(test_buff); i++) {
+                if(test_buff[i] != 0xFF){
+                    ESP_LOGI(TAG, "Erase data err[%d/%d]: %s", flash_tested_round,test_round , read_data);
+                    memset(uart_info, 0x0, sizeof(uart_info));
+                    sprintf(uart_info, "test erase err:%d/%d", flash_tested_round,test_round);
+                    uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
+                    test_round = 0;
+                }
             }
 
             // Write the data, starting from the beginning of the partition
             // memset(store_data, 0xaa, sizeof(store_data));
-            ESP_ERROR_CHECK(esp_partition_write(partition, 0, store_data, sizeof(store_data)));
+            ESP_ERROR_CHECK(esp_partition_write(partition, 0, test_data, sizeof(test_data)));
             // ESP_LOGI(TAG, "Written data: %s", store_data);
 
             // Read back the data, checking that read data and written data match
-            ESP_ERROR_CHECK(esp_partition_read(partition, 0, read_data, sizeof(read_data)));
-            if (!memcmp(store_data, read_data, sizeof(read_data))) {
-                ESP_LOGI(TAG, "test write err[%d/%d]: %s", flash_tested_round,test_round , read_data);
-                memset(uart_info, 0x0, sizeof(uart_info));
-                sprintf(uart_info, "test write err:%d/%d", flash_tested_round,test_round);
-                uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
-                test_round = 0;
+            ESP_ERROR_CHECK(esp_partition_read(partition, 0, test_buff, sizeof(test_buff)));
+            for (int i = 0; i < sizeof(test_buff); i++) {
+                if(test_buff[i] != test_data[i]){
+                    ESP_LOGI(TAG, "Erase data err[%d/%d]: %s", flash_tested_round,test_round , read_data);
+                    memset(uart_info, 0x0, sizeof(uart_info));
+                    sprintf(uart_info, "test erase err:%d/%d", flash_tested_round,test_round);
+                    uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
+                    test_round = 0;
+                }
             }
+            // if (!memcmp(store_data, read_data, sizeof(read_data))) {
+            //     ESP_LOGI(TAG, "test write err[%d/%d]: %s", flash_tested_round,test_round , read_data);
+            //     memset(uart_info, 0x0, sizeof(uart_info));
+            //     sprintf(uart_info, "test write err:%d/%d", flash_tested_round,test_round);
+            //     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
+            //     test_round = 0;
+            // }
             // assert(memcmp(store_data, read_data, sizeof(read_data)) == 0);
-            ESP_LOGI(TAG, "TEST:%d/%d", flash_tested_round,test_round);
+            ESP_LOGI(TAG, "\nTEST:%d/%d", flash_tested_round,test_round);
             flash_tested_round++;
             vTaskDelay(10 / portTICK_PERIOD_MS);
         }
         else if(test_round) {
-            ESP_LOGI(TAG, "TEST OK:%d",test_round);
+            ESP_LOGI(TAG, "\nTEST OK:%d",test_round);
             memset(uart_info, 0x0, sizeof(uart_info));
             sprintf(uart_info, "TEST OK:%d",test_round);
             uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
@@ -122,7 +141,7 @@ static void test_task(void *arg)
 }
 
 
-static void uart_task(void *arg)
+void IRAM_ATTR uart_task(void *arg)
 {
     /* Configure parameters of an UART driver,
      * communication pins and install the driver */
