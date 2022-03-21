@@ -49,11 +49,9 @@ static uint32_t test_round =  0;
 static uint32_t flash_tested_round = 0;
 
 #define BUF_SIZE    (1024)
-#define BLOCK_SIZE   128
+#define BLOCK_SIZE   SPI_FLASH_SEC_SIZE
 DRAM_ATTR static char test_data[BLOCK_SIZE];
 DRAM_ATTR static char test_buff[BLOCK_SIZE];
-// #define SPI_FLASH_SEC_SIZE  4096    /**< SPI Flash sector size */
-
 
 void IRAM_ATTR test_task(void *arg)
 {
@@ -75,26 +73,27 @@ void IRAM_ATTR test_task(void *arg)
     // static char store_data[] = "ESP-IDF Partition Operations Test (Read, Erase, Write)";
     // static char read_data[sizeof(store_data)];
     char uart_info[30];
-        for (int i = 0; i < BLOCK_SIZE; i++) {
-            test_data[i] = i+1;
-        }
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        test_data[i] = i%250 + 1;
+    }
     while (1) {
         for (int i = 0; i < BLOCK_SIZE; i++) {
             test_buff[i] = 0;
         }
+        uint32_t sector_offset = test_sector*BLOCK_SIZE;
         // Erase entire partition
         // memset(read_data, 0xFF, sizeof(read_data));
         // ESP_ERROR_CHECK(esp_partition_erase_range(partition, 0, partition->size));
         // Erase the area where the data was written. Erase size shoud be a multiple of SPI_FLASH_SEC_SIZE
         // and also be SPI_FLASH_SEC_SIZE aligned
         if(flash_tested_round<test_round) {
-            ESP_ERROR_CHECK(esp_partition_erase_range(partition, 0, SPI_FLASH_SEC_SIZE));
+            ESP_ERROR_CHECK(esp_partition_erase_range(partition, sector_offset, SPI_FLASH_SEC_SIZE));
             // Read back the data (should all now be 0xFF's)
-            ESP_ERROR_CHECK(esp_partition_read(partition, 0, test_buff, sizeof(test_buff)));
+            ESP_ERROR_CHECK(esp_partition_read(partition, sector_offset, test_buff, sizeof(test_buff)));
             // assert(memcmp(store_data, read_data, sizeof(read_data)) == 0);
             for (int i = 0; i < sizeof(test_buff); i++) {
                 if(test_buff[i] != 0xFF){
-                    ESP_LOGI(TAG, "erase sector %d data err[%d/%d]: %d!=%d",test_sector, flash_tested_round,test_round , test_buff[i] , test_data[i]);
+                    ESP_LOGI(TAG, "erase sector %d data err[%d/%d]: %d!=0xFF",test_sector, flash_tested_round,test_round , test_buff[i]);
                     memset(uart_info, 0x0, sizeof(uart_info));
                     sprintf(uart_info, "test sector %d:erase err[%d/%d]",test_sector, flash_tested_round,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
@@ -104,14 +103,14 @@ void IRAM_ATTR test_task(void *arg)
 
             // Write the data, starting from the beginning of the partition
             // memset(store_data, 0xaa, sizeof(store_data));
-            ESP_ERROR_CHECK(esp_partition_write(partition, 0, test_data, sizeof(test_data)));
+            ESP_ERROR_CHECK(esp_partition_write(partition, sector_offset, test_data, sizeof(test_data)));
             // ESP_LOGI(TAG, "Written data: %s", store_data);
 
             // Read back the data, checking that read data and written data match
-            ESP_ERROR_CHECK(esp_partition_read(partition, 0, test_buff, sizeof(test_buff)));
+            ESP_ERROR_CHECK(esp_partition_read(partition, sector_offset, test_buff, sizeof(test_buff)));
             for (int i = 0; i < sizeof(test_buff); i++) {
                 if(test_buff[i] != test_data[i]){
-                    ESP_LOGI(TAG, "write sector %d data err[%d/%d]: %s",test_sector, flash_tested_round,test_round , read_data);
+                    ESP_LOGI(TAG, "write sector %d data err[%d/%d]: %d!=%d",test_sector, flash_tested_round,test_round , test_buff[i] , test_data[i]);
                     memset(uart_info, 0x0, sizeof(uart_info));
                     sprintf(uart_info, "test sector %d:write err[%d/%d]",test_sector, flash_tested_round,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
