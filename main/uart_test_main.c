@@ -86,8 +86,9 @@ static void test_task(void *arg)
             // assert(memcmp(store_data, read_data, sizeof(read_data)) == 0);
             if (!memcmp(store_data, read_data, sizeof(read_data))) {
                 ESP_LOGI(TAG, "Erase data err[%d/%d]: %s", flash_tested_round,test_round , read_data);
+                memset(uart_info, 0x0, sizeof(uart_info));
                 sprintf(uart_info, "test erase err:%d/%d", flash_tested_round,test_round);
-                uart_write_bytes(ECHO_UART_PORT_NUM, read_data, strlen(uart_info));
+                uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
                 test_round = 0;
             }
 
@@ -100,13 +101,22 @@ static void test_task(void *arg)
             ESP_ERROR_CHECK(esp_partition_read(partition, 0, read_data, sizeof(read_data)));
             if (!memcmp(store_data, read_data, sizeof(read_data))) {
                 ESP_LOGI(TAG, "test write err[%d/%d]: %s", flash_tested_round,test_round , read_data);
+                memset(uart_info, 0x0, sizeof(uart_info));
                 sprintf(uart_info, "test write err:%d/%d", flash_tested_round,test_round);
-                uart_write_bytes(ECHO_UART_PORT_NUM, read_data, strlen(uart_info));
+                uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
                 test_round = 0;
             }
             // assert(memcmp(store_data, read_data, sizeof(read_data)) == 0);
-            // ESP_LOGI(TAG, "Erased data");
+            ESP_LOGI(TAG, "TEST:%d/%d", flash_tested_round,test_round);
             flash_tested_round++;
+            vTaskDelay(10 / portTICK_PERIOD_MS);
+        }
+        else if(test_round) {
+            ESP_LOGI(TAG, "TEST OK:%d",test_round);
+            memset(uart_info, 0x0, sizeof(uart_info));
+            sprintf(uart_info, "TEST OK:%d",test_round);
+            uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
+            test_round = 0;
         }
     }
 }
@@ -152,8 +162,11 @@ static void uart_task(void *arg)
                         test_round += data[i]-'0';
                     }
                 }
-                sprintf(uart_info, "ready test round:%d",test_round);
-                uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
+                if(test_round){
+                    ESP_LOGI(TAG, "ready test:%d",test_round);
+                    sprintf(uart_info, "ready test:%d",test_round);
+                    uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
+                }
             }
         }
     }

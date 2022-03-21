@@ -31,5 +31,5 @@ jobs:
       - name: Upload Firmware
         uses: actions/upload-artifact@v2
         with:
-          name: ESP-TEST-FW
+          name: ESP-TEST-C3
           path: build/uart_test.bin
