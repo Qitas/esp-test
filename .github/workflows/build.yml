@@ -27,3 +27,9 @@ jobs:
           . ~/esp/esp-idf/export.sh
           idf.py set-target esp32c3
           idf.py build
+
+      - name: Upload Firmware
+        uses: actions/upload-artifact@v2
+        with:
+          name: ESP-TEST-FW
+          path: build/uart_test.bin

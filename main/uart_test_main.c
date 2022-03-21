@@ -44,12 +44,12 @@
 
 static const char *TAG = "UART TEST";
 
-static uint32_t test_sector = 1;
+// static uint32_t test_sector = 1;
 static uint32_t test_round =  0;
 static uint32_t flash_tested_round = 0;
 
 #define BUF_SIZE    (1024)
-#define BLOCK_SIZE  128
+// #define BLOCK_SIZE  128
 
 
 static void test_task(void *arg)
