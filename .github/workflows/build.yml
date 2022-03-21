@@ -20,7 +20,7 @@ jobs:
           cd ~/esp
           git clone -b v4.4 --recursive https://github.com/espressif/esp-idf.git
           cd esp-idf
-          ./install.sh esp32
+          ./install.sh
 
       - name: Build test_app
         run: |
