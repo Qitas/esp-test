@@ -44,7 +44,7 @@
 
 static const char *TAG = "UART TEST";
 
-// static uint32_t test_sector = 1;
+static uint32_t test_sector = 0;
 static uint32_t test_round =  0;
 static uint32_t flash_tested_round = 0;
 
@@ -94,9 +94,9 @@ void IRAM_ATTR test_task(void *arg)
             // assert(memcmp(store_data, read_data, sizeof(read_data)) == 0);
             for (int i = 0; i < sizeof(test_buff); i++) {
                 if(test_buff[i] != 0xFF){
-                    ESP_LOGI(TAG, "Erase data err[%d/%d]: %s", flash_tested_round,test_round , read_data);
+                    ESP_LOGI(TAG, "erase sector %d data err[%d/%d]: %s",test_sector, flash_tested_round,test_round , read_data);
                     memset(uart_info, 0x0, sizeof(uart_info));
-                    sprintf(uart_info, "test erase err:%d/%d", flash_tested_round,test_round);
+                    sprintf(uart_info, "test sector %d:erase err[%d/%d]",test_sector, flash_tested_round,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
                     test_round = 0;
                 }
@@ -111,9 +111,9 @@ void IRAM_ATTR test_task(void *arg)
             ESP_ERROR_CHECK(esp_partition_read(partition, 0, test_buff, sizeof(test_buff)));
             for (int i = 0; i < sizeof(test_buff); i++) {
                 if(test_buff[i] != test_data[i]){
-                    ESP_LOGI(TAG, "Erase data err[%d/%d]: %s", flash_tested_round,test_round , read_data);
+                    ESP_LOGI(TAG, "write sector %d data err[%d/%d]: %s",test_sector, flash_tested_round,test_round , read_data);
                     memset(uart_info, 0x0, sizeof(uart_info));
-                    sprintf(uart_info, "test erase err:%d/%d", flash_tested_round,test_round);
+                    sprintf(uart_info, "test sector %d:write err[%d/%d]",test_sector, flash_tested_round,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
                     test_round = 0;
                 }
@@ -131,9 +131,9 @@ void IRAM_ATTR test_task(void *arg)
             vTaskDelay(10 / portTICK_PERIOD_MS);
         }
         else if(test_round) {
-            ESP_LOGI(TAG, "\nTEST OK:%d",test_round);
+            ESP_LOGI(TAG, "\nTEST sector %d OK:%d",test_sector,test_round);
             memset(uart_info, 0x0, sizeof(uart_info));
-            sprintf(uart_info, "TEST OK:%d",test_round);
+            sprintf(uart_info, "TEST sector %d OK:%d",test_sector,test_round);
             uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
             test_round = 0;
         }
@@ -154,7 +154,7 @@ void IRAM_ATTR uart_task(void *arg)
         .source_clk = UART_SCLK_APB,
     };
     int intr_alloc_flags = 0;
-
+    static char flag = 0;
 #if CONFIG_UART_ISR_IN_IRAM
     intr_alloc_flags = ESP_INTR_FLAG_IRAM;
 #endif
@@ -169,21 +169,36 @@ void IRAM_ATTR uart_task(void *arg)
     while (1) {
         // Read data from the UART
         int len = uart_read_bytes(ECHO_UART_PORT_NUM, data, (BUF_SIZE - 1), 20 / portTICK_PERIOD_MS);
-        if (len) {
+        if (len>12) {
             data[len] = '\0';
             ESP_LOGI(TAG, "Recv Str[%d]: %s",len, (char *) data);
-            if (memcmp((char *) data, "Flash sector ", 13)) {
+            if (memcmp((char *) data, "Flash sector ", 13)==0 || memcmp((char *) data, "flash sector ", 13)==0) {
+                flag = 0;
                 test_round = 0;
+                test_sector = 0;
                 flash_tested_round = 0;
-                for (int i = 13; i < len; i++) {
-                    if(data[i]>='0' && data[i]<='9'){
+                for (int i = 12; i < len; i++) {
+                    if(flag == 0 && data[i]==' '){
+                        flag = 1;
+                    }
+                    if(flag==1 && data[i]>='0' && data[i]<='9'){
+                        test_sector *= 10;
+                        test_sector += data[i]-'0';
+                    }
+                    else if(flag == 1 && data[i]==' '){
+                        flag = 2;
+                    }
+                    else if(flag==2 && data[i]>='0' && data[i]<='9'){
                         test_round *= 10;
                         test_round += data[i]-'0';
                     }
+                    else if(flag==2){
+                        flag = 3;
+                    }
                 }
                 if(test_round){
-                    ESP_LOGI(TAG, "ready test:%d",test_round);
-                    sprintf(uart_info, "ready test:%d",test_round);
+                    ESP_LOGI(TAG, "ready test sector %d:%d",test_sector,test_round);
+                    sprintf(uart_info, "ready test sector %d:%d",test_sector,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
                 }
             }
