@@ -7,7 +7,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
-// #include <assert.h>
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -67,8 +67,10 @@ static void test_task(void *arg)
     const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "storage");
     assert(partition != NULL);
 
-    static char store_data[] = "ESP Partition Operations Test (Read, Erase, Write)";
-    static char read_data[BLOCK_SIZE];
+    // static char store_data[] = "ESP Partition Operations Test (Read, Erase, Write)";
+    // static char read_data[BLOCK_SIZE];
+    static char store_data[] = "ESP-IDF Partition Operations Test (Read, Erase, Write)";
+    static char read_data[sizeof(store_data)];
     char uart_info[30];
     while (1) {
         // Erase entire partition
@@ -86,9 +88,11 @@ static void test_task(void *arg)
                 ESP_LOGI(TAG, "Erase data err[%d/%d]: %s", flash_tested_round,test_round , read_data);
                 sprintf(uart_info, "test erase err:%d/%d", flash_tested_round,test_round);
                 uart_write_bytes(ECHO_UART_PORT_NUM, read_data, strlen(uart_info));
+                test_round = 0;
             }
 
             // Write the data, starting from the beginning of the partition
+            // memset(store_data, 0xaa, sizeof(store_data));
             ESP_ERROR_CHECK(esp_partition_write(partition, 0, store_data, sizeof(store_data)));
             // ESP_LOGI(TAG, "Written data: %s", store_data);
 
@@ -98,6 +102,7 @@ static void test_task(void *arg)
                 ESP_LOGI(TAG, "test write err[%d/%d]: %s", flash_tested_round,test_round , read_data);
                 sprintf(uart_info, "test write err:%d/%d", flash_tested_round,test_round);
                 uart_write_bytes(ECHO_UART_PORT_NUM, read_data, strlen(uart_info));
+                test_round = 0;
             }
             // assert(memcmp(store_data, read_data, sizeof(read_data)) == 0);
             // ESP_LOGI(TAG, "Erased data");
