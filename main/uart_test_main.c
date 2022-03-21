@@ -184,19 +184,25 @@ void IRAM_ATTR uart_task(void *arg)
                         test_sector *= 10;
                         test_sector += data[i]-'0';
                         flag = 2;
+                        if(data[i+1]==' ') flag = 3;
                     }
                     else if(flag==2 && flag==3 && data[i]==' '){
                         flag = 3;
+                    }
+                    else if(flag==2 && data[i]<'0' && data[i]>'9'){
+                        ESP_LOGI(TAG, "input sector error [%d]:%c",i,data[i]);
+                        if(test_sector) test_sector = 0;
+                        break;
                     }
                     else if(flag==3 && flag==4 && data[i]>='0' && data[i]<='9'){
                         test_round *= 10;
                         test_round += data[i]-'0';
                         flag = 4;
+                        if(data[i+1]==' ') break;
                     }
-                    else {
-                        ESP_LOGI(TAG, "input char error [%d]:%c",i,data[i]);
-                        flag = 5;
-
+                    else if(flag==4 && data[i]<'0' && data[i]>'9'){
+                        ESP_LOGI(TAG, "input round error [%d]:%c",i,data[i]);
+                        if(test_round) test_round = 0;
                         break;
                     }
                 }
