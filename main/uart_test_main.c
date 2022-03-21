@@ -180,21 +180,24 @@ void IRAM_ATTR uart_task(void *arg)
                     if(flag <= 1 && data[i]==' '){
                         flag = 1;
                     }
-                    else if(flag && flag<=2 && data[i]>='0' && data[i]<='9'){
+                    else if(flag==1 && flag==2 && data[i]>='0' && data[i]<='9'){
                         test_sector *= 10;
                         test_sector += data[i]-'0';
                         flag = 2;
                     }
-                    else if(flag>=2 && data[i]==' '){
+                    else if(flag==2 && flag==3 && data[i]==' '){
                         flag = 3;
                     }
-                    else if(flag>=3 && flag<=4 && data[i]>='0' && data[i]<='9'){
+                    else if(flag==3 && flag==4 && data[i]>='0' && data[i]<='9'){
                         test_round *= 10;
                         test_round += data[i]-'0';
                         flag = 4;
                     }
-                    else if(flag==4){
+                    else {
+                        ESP_LOGI(TAG, "input char error [%d]:%c",i,data[i]);
                         flag = 5;
+
+                        break;
                     }
                 }
                 if(test_round){
