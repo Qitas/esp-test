@@ -178,9 +178,6 @@ static void uart_task(void *arg)
                 test_round = 0;
                 test_sector = 0;
                 flash_tested_round = 0;
-                for (int i = 0; i < len; i++) {
-                    ESP_LOGI(TAG, "[%d]:%c" ,i, data[i]);
-                }
                 for (int i = 13; i < len; i++) {
                     if(flag<=1 && data[i]>='0' && data[i]<='9'){
                         test_sector *= 10;
@@ -189,7 +186,7 @@ static void uart_task(void *arg)
                         // ESP_LOGI(TAG, "sector [%d][%d]",test_sector,i);
                     }
                     else if(flag==1 && data[i]==' '){
-                        ESP_LOGI(TAG, "input sector [%d][%d]",test_sector,i);
+                        // ESP_LOGI(TAG, "input sector [%d][%d]",test_sector,i);
                         flag = 3;
                     }
                     else if(flag>=3 && data[i]>='0' && data[i]<='9'){
@@ -198,14 +195,15 @@ static void uart_task(void *arg)
                         flag = 4;
                         // ESP_LOGI(TAG, "round [%d][%d]",test_round,i);
                     }
-                    else if(flag==4 && data[i]==' '){
-                        ESP_LOGI(TAG, "input round [%d][%d]",test_round,i);
+                    else if(flag==4){
+                        flag = 0;
+                        // ESP_LOGI(TAG, "input round [%d][%d]",test_round,i);
                         break;
                     }
                 }
                 if(test_round){
-                    ESP_LOGI(TAG, "ready test sector %d:%d",test_sector,test_round);
-                    sprintf(uart_info, "ready test sector %d:%d",test_sector,test_round);
+                    ESP_LOGI(TAG, "ready test sector %d:%d ",test_sector,test_round);
+                    sprintf(uart_info, "ready test sector %d:%d ",test_sector,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
                 }
             }
