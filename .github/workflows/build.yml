@@ -35,4 +35,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ESP32-C3-BIN
-          path: build/ESP32-C3-BIN
+          path: ESP32-C3-BIN/
