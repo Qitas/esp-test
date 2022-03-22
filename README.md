@@ -5,13 +5,19 @@
 目前测试的flash区域为 0x50000 作为起始地址的storage区域，以块为单位操作(起始块地址标号为0)，块大小为 SPI_FLASH_SEC_SIZE (4096)
 
 ```
-0xf000      partition-table.bin
+0x8000      partition-table.bin
 0x10000     uart_test.bin
+```
+
+编译固件默认控制串口配置为：
+```
+RX  5
+TX  4
+115200
 ```
 
 
 1、固件烧录后，串口启动指令： Flash sector 1 10 （烧写分区1测试10，注意空格将数字分开）
-
 ```
 Flash sector 1 10
 ```
@@ -34,3 +40,11 @@ test sector 1:write err
 ```
 
 在删除和写入发生错误后，就不再继续向下执行，直接报错后等待再次输入测试指令
+
+
+```
+Flash sector 20 100
+
+ready test sector 20:100
+TEST sector 20 OK:100
+```
