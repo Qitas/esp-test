@@ -42,7 +42,7 @@
 #define ECHO_UART_BAUD_RATE     (CONFIG_EXAMPLE_UART_BAUD_RATE)
 #define ECHO_TASK_STACK_SIZE    (CONFIG_EXAMPLE_TASK_STACK_SIZE)
 
-static const char *TAG = "UART TEST";
+static const char *TAG = "TEST";
 
 static uint32_t test_sector = 0;
 static uint32_t test_round =  0;
@@ -125,17 +125,17 @@ static void test_task(void *arg)
             //     test_round = 0;
             // }
             // assert(memcmp(store_data, read_data, sizeof(read_data)) == 0);
-            ESP_LOGI(TAG, "\nTEST:%d/%d", flash_tested_round,test_round);
+            // ESP_LOGI(TAG, "\nTEST:%d/%d", flash_tested_round,test_round);
             flash_tested_round++;
-            vTaskDelay(10 / portTICK_PERIOD_MS);
         }
         else if(test_round) {
-            ESP_LOGI(TAG, "\nTEST sector %d OK:%d",test_sector,test_round);
+            ESP_LOGI(TAG, "TEST sector %d OK:%d",test_sector,test_round);
             memset(uart_info, 0x0, sizeof(uart_info));
             sprintf(uart_info, "TEST sector %d OK:%d",test_sector,test_round);
             uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
             test_round = 0;
         }
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
 
@@ -170,39 +170,36 @@ static void uart_task(void *arg)
         int len = uart_read_bytes(ECHO_UART_PORT_NUM, data, (BUF_SIZE - 1), 20 / portTICK_PERIOD_MS);
         if (len>12) {
             data[len] = '\0';
-            ESP_LOGI(TAG, "Recv Str[%d]: %s",len, (char *) data);
+            ESP_LOGI(TAG, "Recv Str[%d]: %s",len , (char *) data);
+
             if (memcmp((char *) data, "Flash sector ", 13)==0 || memcmp((char *) data, "flash sector ", 13)==0) {
+                // ESP_LOGI(TAG, "Recv[%d][%d][%d]: %s",len , data[13] , data[15] , (char *) data);
                 flag = 0;
                 test_round = 0;
                 test_sector = 0;
                 flash_tested_round = 0;
-                for (int i = 12; i < len; i++) {
-                    if(flag <= 1 && data[i]==' '){
-                        flag = 1;
-                    }
-                    else if(flag==1 && flag==2 && data[i]>='0' && data[i]<='9'){
+                for (int i = 0; i < len; i++) {
+                    ESP_LOGI(TAG, "[%d]:%c" ,i, data[i]);
+                }
+                for (int i = 13; i < len; i++) {
+                    if(flag<=1 && data[i]>='0' && data[i]<='9'){
                         test_sector *= 10;
                         test_sector += data[i]-'0';
-                        flag = 2;
-                        if(data[i+1]==' ') flag = 3;
+                        flag = 1;
+                        // ESP_LOGI(TAG, "sector [%d][%d]",test_sector,i);
                     }
-                    else if(flag==2 && flag==3 && data[i]==' '){
+                    else if(flag==1 && data[i]==' '){
+                        ESP_LOGI(TAG, "input sector [%d][%d]",test_sector,i);
                         flag = 3;
                     }
-                    else if(flag==2 && data[i]<'0' && data[i]>'9'){
-                        ESP_LOGI(TAG, "input sector error [%d]:%c",i,data[i]);
-                        if(test_sector) test_sector = 0;
-                        break;
-                    }
-                    else if(flag==3 && flag==4 && data[i]>='0' && data[i]<='9'){
+                    else if(flag>=3 && data[i]>='0' && data[i]<='9'){
                         test_round *= 10;
                         test_round += data[i]-'0';
                         flag = 4;
-                        if(data[i+1]==' ') break;
+                        // ESP_LOGI(TAG, "round [%d][%d]",test_round,i);
                     }
-                    else if(flag==4 && data[i]<'0' && data[i]>'9'){
-                        ESP_LOGI(TAG, "input round error [%d]:%c",i,data[i]);
-                        if(test_round) test_round = 0;
+                    else if(flag==4 && data[i]==' '){
+                        ESP_LOGI(TAG, "input round [%d][%d]",test_round,i);
                         break;
                     }
                 }
@@ -213,6 +210,7 @@ static void uart_task(void *arg)
                 }
             }
         }
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
 
@@ -220,6 +218,6 @@ static void uart_task(void *arg)
 
 void app_main(void)
 {
-    xTaskCreate(uart_task, "uart_task", 2048, NULL, 5, NULL);
+    xTaskCreate(uart_task, "uart_task", ECHO_TASK_STACK_SIZE, NULL, 5, NULL);
     xTaskCreate(test_task, "test_task", 4096, NULL, 5, NULL);
 }
