@@ -50,10 +50,10 @@ static uint32_t flash_tested_round = 0;
 
 #define BUF_SIZE    (1024)
 #define BLOCK_SIZE   SPI_FLASH_SEC_SIZE
-DRAM_ATTR static char test_data[BLOCK_SIZE];
-DRAM_ATTR static char test_buff[BLOCK_SIZE];
+static char test_data[BLOCK_SIZE];
+static char test_buff[BLOCK_SIZE];
 
-void IRAM_ATTR test_task(void *arg)
+static void test_task(void *arg)
 {
     /*
     * This example uses the partition table from ../partitions_example.csv. For reference, its contents are as follows:
@@ -140,7 +140,7 @@ void IRAM_ATTR test_task(void *arg)
 }
 
 
-void IRAM_ATTR uart_task(void *arg)
+static void uart_task(void *arg)
 {
     /* Configure parameters of an UART driver,
      * communication pins and install the driver */
