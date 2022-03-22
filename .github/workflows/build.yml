@@ -27,9 +27,12 @@ jobs:
           . ~/esp/esp-idf/export.sh
           idf.py set-target esp32c3
           idf.py build
+          mkdir ESP32-C3-BIN
+          cp build/partition_table/partition-table.bin ESP32-C3-BIN/partition-table.bin
+          cp build/*.bin ESP32-C3-BIN/
 
       - name: Upload Firmware
         uses: actions/upload-artifact@v2
         with:
           name: ESP-TEST-C3
-          path: build/uart_test.bin
+          path: build/*.bin
