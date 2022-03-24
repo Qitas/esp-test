@@ -1,11 +1,11 @@
-menu "Echo Example Configuration"
+menu "Example Configuration"
 
     config EXAMPLE_UART_PORT_NUM
         int "UART port number"
         range 0 2 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S3
         default 2 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S3
         range 0 1 if IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32C2 || IDF_TARGET_ESP32H2
-        default 1 if IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32C2 || IDF_TARGET_ESP32H2
+        default 0 if IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32C2 || IDF_TARGET_ESP32H2
         help
             UART communication port number for the example.
             See UART documentation for available port numbers.
@@ -21,7 +21,7 @@ menu "Echo Example Configuration"
         int "UART RXD pin number"
         range 0 39 if IDF_TARGET_ESP32
         range 0 46 if IDF_TARGET_ESP32S2
-        range 0 19 if IDF_TARGET_ESP32C3
+        range 0 21 if IDF_TARGET_ESP32C3
         range 0 48 if IDF_TARGET_ESP32S3
         range 0 18 if IDF_TARGET_ESP32C2
         range 0 25 if IDF_TARGET_ESP32H2
@@ -34,7 +34,7 @@ menu "Echo Example Configuration"
         int "UART TXD pin number"
         range 0 33 if IDF_TARGET_ESP32
         range 0 45 if IDF_TARGET_ESP32S2
-        range 0 19 if IDF_TARGET_ESP32C3
+        range 0 21 if IDF_TARGET_ESP32C3
         range 0 48 if IDF_TARGET_ESP32S3
         range 0 18 if IDF_TARGET_ESP32C2
         range 0 25 if IDF_TARGET_ESP32H2
@@ -49,5 +49,12 @@ menu "Echo Example Configuration"
         default 2048
         help
             Defines stack size for UART echo example. Insufficient stack size can cause crash.
+
+    config EXAMPLE_TEST_FLASH_SIZE
+        int "example test flash size (KB)"
+        range 1024 4096
+        default 2048
+        help
+            Defines Flash size for test example.
 
 endmenu

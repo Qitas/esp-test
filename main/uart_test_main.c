@@ -20,19 +20,6 @@
 #include "esp_partition.h"
 
 
-
-/**
- * This is an example which echos any data it receives on configured UART back to the sender,
- * with hardware flow control turned off. It does not use UART driver event queue.
- *
- * - Port: configured UART
- * - Receive (Rx) buffer: on
- * - Transmit (Tx) buffer: off
- * - Flow control: off
- * - Event queue: off
- * - Pin assignment: see defines below (See Kconfig)
- */
-
 #define ECHO_TEST_TXD (CONFIG_EXAMPLE_UART_TXD)
 #define ECHO_TEST_RXD (CONFIG_EXAMPLE_UART_RXD)
 #define ECHO_TEST_RTS (UART_PIN_NO_CHANGE)
@@ -41,6 +28,7 @@
 #define ECHO_UART_PORT_NUM      (CONFIG_EXAMPLE_UART_PORT_NUM)
 #define ECHO_UART_BAUD_RATE     (CONFIG_EXAMPLE_UART_BAUD_RATE)
 #define ECHO_TASK_STACK_SIZE    (CONFIG_EXAMPLE_TASK_STACK_SIZE)
+#define TEST_TASK_STACK_SIZE    (CONFIG_EXAMPLE_TEST_FLASH_SIZE)
 
 static const char *TAG = "TEST";
 static uint16_t sector_max = 1;
@@ -68,7 +56,7 @@ static void test_task(void *arg)
     }
 
     uint32_t sector_offset = test_sector*BLOCK_SIZE;
-    ESP_LOGI(TAG, "size_flash_chip = %d bytes,%d sector\n", size_flash_chip,sector_num);
+    ESP_LOGI(TAG, "size_flash_chip %d KB = %d bytes,%d sector\n",TEST_TASK_STACK_SIZE, size_flash_chip,sector_num);
     while (1) {
         // xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
         // uint32_t notify_value;
@@ -147,21 +135,27 @@ static void uart_task(void *arg)
 #if CONFIG_UART_ISR_IN_IRAM
     intr_alloc_flags = ESP_INTR_FLAG_IRAM;
 #endif
-    char uart_info[30];
     ESP_ERROR_CHECK(uart_driver_install(ECHO_UART_PORT_NUM, BUF_SIZE * 2, 0, 0, NULL, intr_alloc_flags));
     ESP_ERROR_CHECK(uart_param_config(ECHO_UART_PORT_NUM, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(ECHO_UART_PORT_NUM, ECHO_TEST_TXD, ECHO_TEST_RXD, ECHO_TEST_RTS, ECHO_TEST_CTS));
 
     // Configure a temporary buffer for the incoming data
     uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
-
+    char uart_info[30];
+    memset(uart_info, 0x0, sizeof(uart_info));
+    sprintf(uart_info, "TEST FLASH [RX%d,TX%d]",ECHO_TEST_RXD ,ECHO_TEST_TXD);
+    ESP_LOGI(TAG,"%s",uart_info);
+    uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
     while (1) {
         // Read data from the UART
         int len = uart_read_bytes(ECHO_UART_PORT_NUM, data, (BUF_SIZE - 1), 20 / portTICK_PERIOD_MS);
         if (len>12) {
             data[len] = '\0';
-            ESP_LOGI(TAG, "Recv Str[%d]: %s",len , (char *) data);
-
+            memset(uart_info, 0x0, sizeof(uart_info));
+            // ESP_LOGI(TAG, "Recv Str[%d]: %s",len , (char *) data);
+            sprintf(uart_info, "RecvStr[%d]:%s",len , (char *) data);
+            ESP_LOGI(TAG,"%s",uart_info);
+            uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
             if (memcmp((char *) data, "Flash sector ", 13)==0 || memcmp((char *) data, "flash sector ", 13)==0) {
                 // ESP_LOGI(TAG, "Recv[%d][%d][%d]: %s",len , data[13] , data[15] , (char *) data);
                 flag = 0;
