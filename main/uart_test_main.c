@@ -21,7 +21,7 @@
 #define ECHO_TASK_STACK_SIZE    (CONFIG_EXAMPLE_TASK_STACK_SIZE)
 #define TEST_TASK_STACK_SIZE    (CONFIG_EXAMPLE_TEST_FLASH_SIZE)
 
-static const char *TAG = "TEST";
+// static const char *TAG = "TEST";
 static uint16_t sector_max = 1;
 static uint16_t sector_num = 1;
 static int32_t test_sector = 0;
@@ -79,7 +79,7 @@ static void test_task(void *arg)
             // assert(memcmp(store_data, read_data, sizeof(read_data)) == 0);
             for (int i = 0; i < sizeof(test_buff); i++) {
                 if(test_buff[i] != 0xFF){
-                    ESP_LOGI(TAG, "erase sector %d data err[%d/%d]: %d!=0xFF",test_sector, flash_tested_round,test_round , test_buff[i]);
+                    // ESP_LOGI(TAG, "erase sector %d data err[%d/%d]: %d!=0xFF",test_sector, flash_tested_round,test_round , test_buff[i]);
                     memset(uart_info, 0x0, sizeof(uart_info));
                     sprintf(uart_info, "test sector %d:erase err[%d/%d]",test_sector, flash_tested_round,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
@@ -94,7 +94,7 @@ static void test_task(void *arg)
             ESP_ERROR_CHECK(esp_partition_read(partition, sector_offset, test_buff, sizeof(test_buff)));
             for (int i = 0; i < sizeof(test_buff); i++) {
                 if(test_buff[i] != test_data[i]){
-                    ESP_LOGI(TAG, "write sector %d data err[%d/%d]: %d!=%d",test_sector, flash_tested_round,test_round , test_buff[i] , test_data[i]);
+                    // ESP_LOGI(TAG, "write sector %d data err[%d/%d]: %d!=%d",test_sector, flash_tested_round,test_round , test_buff[i] , test_data[i]);
                     memset(uart_info, 0x0, sizeof(uart_info));
                     sprintf(uart_info, "test sector %d:write err[%d/%d]",test_sector, flash_tested_round,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
@@ -183,7 +183,7 @@ static void uart_task(void *arg)
                     }
                 }
                 if(test_round){
-                    if(test_sector>0){
+                    if(sector_num==1){
                         sprintf(uart_info, "ready test sector %d:%d ",test_sector,test_round);
                     }
                     else sprintf(uart_info, "ready test all sector:%d ",test_round);
