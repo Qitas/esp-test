@@ -1,12 +1,3 @@
-/* UART Echo Example
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,7 +6,7 @@
 #include "driver/uart.h"
 #include "driver/gpio.h"
 #include "sdkconfig.h"
-#include "esp_log.h"
+// #include "esp_log.h"
 #include "esp_err.h"
 #include "esp_partition.h"
 
@@ -56,7 +47,7 @@ static void test_task(void *arg)
     }
 
     uint32_t sector_offset = test_sector*BLOCK_SIZE;
-    ESP_LOGI(TAG, "size_flash_chip %d KB = %d bytes,%d sector\n",TEST_TASK_STACK_SIZE, size_flash_chip,sector_num);
+    // ESP_LOGI(TAG, "size_flash_chip %d KB = %d bytes,%d sector\n",TEST_TASK_STACK_SIZE, size_flash_chip,sector_num);
     while (1) {
         // xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
         // uint32_t notify_value;
@@ -64,8 +55,8 @@ static void test_task(void *arg)
         if(test_round && flash_tested_round>=test_round) {
             sector_num --;
             memset(uart_info, 0x0, sizeof(uart_info));
-            sprintf(uart_info, "TEST sector[%d] round[%d] OK",test_sector,test_round);
-            ESP_LOGI(TAG, "%s",uart_info);
+            sprintf(uart_info, "sector[%d] test [%d] times:OK",test_sector,test_round);
+            // ESP_LOGI(TAG, "%s",uart_info);
             uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
             if(sector_num==0) {
                 test_round = 0;
@@ -144,7 +135,7 @@ static void uart_task(void *arg)
     char uart_info[30];
     memset(uart_info, 0x0, sizeof(uart_info));
     sprintf(uart_info, "TEST FLASH [RX%d,TX%d]",ECHO_TEST_RXD ,ECHO_TEST_TXD);
-    ESP_LOGI(TAG,"%s",uart_info);
+    // ESP_LOGI(TAG,"%s",uart_info);
     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
     while (1) {
         // Read data from the UART
@@ -154,7 +145,7 @@ static void uart_task(void *arg)
             memset(uart_info, 0x0, sizeof(uart_info));
             // ESP_LOGI(TAG, "Recv Str[%d]: %s",len , (char *) data);
             sprintf(uart_info, "RecvStr[%d]:%s",len , (char *) data);
-            ESP_LOGI(TAG,"%s",uart_info);
+            // ESP_LOGI(TAG,"%s",uart_info);
             uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
             if (memcmp((char *) data, "Flash sector ", 13)==0 || memcmp((char *) data, "flash sector ", 13)==0) {
                 // ESP_LOGI(TAG, "Recv[%d][%d][%d]: %s",len , data[13] , data[15] , (char *) data);
@@ -173,7 +164,7 @@ static void uart_task(void *arg)
                     else if(flag<=1 && data[i]=='a'){
                         test_sector = 0;
                         sector_num = sector_max;
-                        ESP_LOGI(TAG, "test sector all [%d]",test_sector);
+                        // ESP_LOGI(TAG, "test sector all [%d]",test_sector);
                         flag = 2;
                     }
                     else if((flag==1 || flag==2) && data[i]==' '){
@@ -196,7 +187,7 @@ static void uart_task(void *arg)
                         sprintf(uart_info, "ready test sector %d:%d ",test_sector,test_round);
                     }
                     else sprintf(uart_info, "ready test all sector:%d ",test_round);
-                    ESP_LOGI(TAG,"%s",uart_info);
+                    // ESP_LOGI(TAG,"%s",uart_info);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
                 }
             }
