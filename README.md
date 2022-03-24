@@ -5,11 +5,14 @@
 目前测试的flash区域为 0x50000 作为起始地址的storage区域，以块为单位操作(起始块地址标号为0)，块大小为 SPI_FLASH_SEC_SIZE (4096)
 
 ```
+0x0         bootloader.bin
 0x8000      partition-table.bin
 0x10000     uart_test.bin
 ```
 
-编译固件默认控制串口配置为：
+融合后固件可以直接下载到地址0x0
+
+编译固件-默认控制串口配置为：
 ```
 RX  5
 TX  4
