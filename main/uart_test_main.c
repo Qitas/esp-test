@@ -1,4 +1,4 @@
-#include <assert.h>
+// #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -6,9 +6,9 @@
 #include "driver/uart.h"
 #include "driver/gpio.h"
 #include "sdkconfig.h"
-// #include "esp_log.h"
+#include "esp_spi_flash.h"
 #include "esp_err.h"
-#include "esp_partition.h"
+// #include "esp_partition.h"
 
 
 #define ECHO_TEST_TXD (CONFIG_EXAMPLE_UART_TXD)
@@ -25,29 +25,33 @@
 static uint16_t sector_max = 1;
 static uint16_t sector_num = 1;
 static int32_t test_sector = 0;
-static uint32_t test_round =  0;
+static uint32_t test_round = 0;
 static uint32_t flash_tested_round = 0;
 
-#define BUF_SIZE    (1024)
-#define BLOCK_SIZE   SPI_FLASH_SEC_SIZE
+#define BUF_SIZE        (1024)
+#define TEST_F_START    (0x50000)
+#define BLOCK_SIZE      SPI_FLASH_SEC_SIZE
 static char test_data[BLOCK_SIZE];
 static char test_buff[BLOCK_SIZE];
 
-static void test_task(void *arg)
+static IRAM_ATTR void test_task(void *arg)
 {
     // Find the partition map in the partition table
-    const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "storage");
-    assert(partition != NULL);
-    // size_t size_flash_chip = spi_flash_get_chip_size();
-    size_t size_flash_chip = 0x200000;
-    sector_max = (size_flash_chip-0x50000)/BLOCK_SIZE;
-    char uart_info[30];
+    // const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "storage");
+    // assert(partition != NULL);
+    size_t size_flash_chip = spi_flash_get_chip_size();
+    // size_t size_flash_chip = 0x200000;
+    sector_max = (size_flash_chip-TEST_F_START)/BLOCK_SIZE;
+    // sector_max = (size_flash_chip)/BLOCK_SIZE;
+    char uart_info[80];
     for (int i = 0; i < BLOCK_SIZE; i++) {
         test_data[i] = i%250 + 1;
     }
-
     uint32_t sector_offset = test_sector*BLOCK_SIZE;
-    // ESP_LOGI(TAG, "size_flash_chip %d KB = %d bytes,%d sector\n",TEST_TASK_STACK_SIZE, size_flash_chip,sector_num);
+    uint32_t addr_offset =  TEST_F_START + sector_offset;
+    memset(uart_info, 0x0, sizeof(uart_info));
+    sprintf(uart_info, "TEST FLASH [%d MB]",size_flash_chip / (1024 * 1024));
+    uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
     while (1) {
         // xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
         // uint32_t notify_value;
@@ -55,7 +59,7 @@ static void test_task(void *arg)
         if(test_round && flash_tested_round>=test_round) {
             sector_num --;
             memset(uart_info, 0x0, sizeof(uart_info));
-            sprintf(uart_info, "sector[%d] test [%d] times:OK",test_sector,test_round);
+            sprintf(uart_info, "[%d][0x%x]sector test %d times:pass",test_sector,addr_offset,test_round);
             // ESP_LOGI(TAG, "%s",uart_info);
             uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
             if(sector_num==0) {
@@ -65,17 +69,23 @@ static void test_task(void *arg)
             else {
                 test_sector++;
                 sector_offset = test_sector*BLOCK_SIZE;
+                addr_offset = TEST_F_START + sector_offset;
                 flash_tested_round = 0;
             }
         }
-        if(test_sector>sector_max) test_sector = 0;
+        if(test_sector>sector_max){
+            test_sector = 0;
+        }
         while(flash_tested_round<test_round) {
             for (int i = 0; i < BLOCK_SIZE; i++) {
                 test_buff[i] = 0;
             }
-            ESP_ERROR_CHECK(esp_partition_erase_range(partition, sector_offset, SPI_FLASH_SEC_SIZE));
+            // ESP_ERROR_CHECK(esp_partition_erase_range(partition, sector_offset, SPI_FLASH_SEC_SIZE));
+
+            ESP_ERROR_CHECK(spi_flash_erase_range(addr_offset, BLOCK_SIZE));
             // Read back the data (should all now be 0xFF's)
-            ESP_ERROR_CHECK(esp_partition_read(partition, sector_offset, test_buff, sizeof(test_buff)));
+            // ESP_ERROR_CHECK(esp_partition_read(partition, sector_offset, test_buff, sizeof(test_buff)));
+            ESP_ERROR_CHECK(spi_flash_read(addr_offset, test_buff, sizeof(test_buff)));
             // assert(memcmp(store_data, read_data, sizeof(read_data)) == 0);
             for (int i = 0; i < sizeof(test_buff); i++) {
                 if(test_buff[i] != 0xFF){
@@ -84,14 +94,17 @@ static void test_task(void *arg)
                     sprintf(uart_info, "test sector %d:erase err[%d/%d]",test_sector, flash_tested_round,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
                     test_round = 0;
+                    break;
                 }
             }
             // memset(store_data, 0xaa, sizeof(store_data));
-            ESP_ERROR_CHECK(esp_partition_write(partition, sector_offset, test_data, sizeof(test_data)));
+            // ESP_ERROR_CHECK(esp_partition_write(partition, sector_offset, test_data, sizeof(test_data)));
+            ESP_ERROR_CHECK(spi_flash_write(addr_offset, test_data, sizeof(test_data)));
             // ESP_LOGI(TAG, "Written data: %s", store_data);
 
             // Read back the data, checking that read data and written data match
-            ESP_ERROR_CHECK(esp_partition_read(partition, sector_offset, test_buff, sizeof(test_buff)));
+            // ESP_ERROR_CHECK(esp_partition_read(partition, sector_offset, test_buff, sizeof(test_buff)));
+            ESP_ERROR_CHECK(spi_flash_read(addr_offset, test_buff, sizeof(test_buff)));
             for (int i = 0; i < sizeof(test_buff); i++) {
                 if(test_buff[i] != test_data[i]){
                     // ESP_LOGI(TAG, "write sector %d data err[%d/%d]: %d!=%d",test_sector, flash_tested_round,test_round , test_buff[i] , test_data[i]);
@@ -99,6 +112,7 @@ static void test_task(void *arg)
                     sprintf(uart_info, "test sector %d:write err[%d/%d]",test_sector, flash_tested_round,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
                     test_round = 0;
+                    break;
                 }
             }
             flash_tested_round++;
@@ -109,10 +123,9 @@ static void test_task(void *arg)
 }
 
 
-static void uart_task(void *arg)
+static IRAM_ATTR void uart_task(void *arg)
 {
-    /* Configure parameters of an UART driver,
-     * communication pins and install the driver */
+
     uart_config_t uart_config = {
         .baud_rate = ECHO_UART_BAUD_RATE,
         .data_bits = UART_DATA_8_BITS,
@@ -132,11 +145,8 @@ static void uart_task(void *arg)
 
     // Configure a temporary buffer for the incoming data
     uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
-    char uart_info[30];
-    memset(uart_info, 0x0, sizeof(uart_info));
-    sprintf(uart_info, "TEST FLASH [RX%d,TX%d]",ECHO_TEST_RXD ,ECHO_TEST_TXD);
-    // ESP_LOGI(TAG,"%s",uart_info);
-    uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
+    char uart_info[80];
+
     while (1) {
         // Read data from the UART
         int len = uart_read_bytes(ECHO_UART_PORT_NUM, data, (BUF_SIZE - 1), 20 / portTICK_PERIOD_MS);
@@ -161,7 +171,7 @@ static void uart_task(void *arg)
                         sector_num = 1;
                         // ESP_LOGI(TAG, "sector [%d][%d]",test_sector,i);
                     }
-                    else if(flag<=1 && data[i]=='a'){
+                    else if(flag<=1 && (data[i]=='a' || data[i]=='A')){
                         test_sector = 0;
                         sector_num = sector_max;
                         // ESP_LOGI(TAG, "test sector all [%d]",test_sector);
@@ -198,7 +208,7 @@ static void uart_task(void *arg)
 
 
 
-void app_main(void)
+IRAM_ATTR void app_main(void)
 {
     xTaskCreate(uart_task, "uart_task", ECHO_TASK_STACK_SIZE, NULL, 5, NULL);
     xTaskCreate(test_task, "test_task", 4096, NULL, 5, NULL);
