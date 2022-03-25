@@ -40,14 +40,10 @@ static char test_buff[BLOCK_SIZE];
 
 static IRAM_ATTR void test_task(void *arg)
 {
-    // Find the partition map in the partition table
-    // const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "storage");
-    // assert(partition != NULL);
     size_t size_flash_chip = spi_flash_get_chip_size();
     #ifdef TEST_F_STOP
     size_flash_chip = TEST_F_STOP;
     #endif
-    // size_t size_flash_chip = 0x200000;
     sector_max = (size_flash_chip-TEST_F_START)/BLOCK_SIZE;
     // sector_max = (size_flash_chip)/BLOCK_SIZE;
     // char uart_info[BUF_SIZE];
@@ -56,7 +52,7 @@ static IRAM_ATTR void test_task(void *arg)
         test_data[i] = i%250 + 1;
     }
     memset(uart_info, 0x0, strlen(uart_info));
-    sprintf(uart_info, "TEST FLASH [%d][%d KB]",sector_max,size_flash_chip /1024);
+    sprintf(uart_info, "TEST FLASH [0x%x]-[%dKB]-[%d]",TEST_F_START,size_flash_chip /1024,sector_max);
     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
     while (1) {
         // xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
@@ -206,15 +202,15 @@ static IRAM_ATTR void uart_task(void *arg)
                 }
                 if(test_round){
                     if(test_sector>=(size_flash_chip-TEST_F_START)/BLOCK_SIZE){
-                        sprintf(uart_info, "test sector %d invalid",test_sector);
+                        sprintf(uart_info, "input sector %d invalid",test_sector);
                         test_sector = 0;
                         test_round = 0;
                         sector_num = 0;
                     }
                     else if(sector_num==1){
-                        sprintf(uart_info, "ready test sector [%d][0x%x]:%d cycles",test_sector,addr_offset,test_round);
+                        sprintf(uart_info, "ready test sector [%d][0x%x]:%dc",test_sector,addr_offset,test_round);
                     }
-                    else sprintf(uart_info, "ready test all sector:%d cycles",test_round);
+                    else sprintf(uart_info, "ready test all sector:%dc",test_round);
                     // ESP_LOGI(TAG,"%s",uart_info);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
                 }
