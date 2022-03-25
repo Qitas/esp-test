@@ -23,6 +23,8 @@ ready test sector 1:10
 3、测试完成后串口反馈：
 ```
 [1][0x50000]sector test 10 cycles:pass
+[1][0x50000]sector test 10 cycles:write err
+[1][0x50000]sector test 10 cycles:erase err
 ```
 
 
