@@ -22,7 +22,7 @@
 #define TEST_TASK_STACK_SIZE    (CONFIG_EXAMPLE_TEST_FLASH_SIZE)
 
 #define BUF_SIZE        (100)
-#define TEST_F_START    (0x50000)
+#define TEST_F_START    (0x40000)
 // static const char *TAG = "TEST";
 static uint16_t sector_max = 1;
 static uint16_t sector_num = 1;
@@ -51,7 +51,7 @@ static IRAM_ATTR void test_task(void *arg)
         test_data[i] = i%250 + 1;
     }
     memset(uart_info, 0x0, strlen(uart_info));
-    sprintf(uart_info, "TEST FLASH [%d MB]",size_flash_chip / (1024 * 1024));
+    sprintf(uart_info, "TEST FLASH [%d][%d MB]",sector_max,size_flash_chip / (1024 * 1024));
     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
     while (1) {
         // xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
@@ -60,7 +60,7 @@ static IRAM_ATTR void test_task(void *arg)
         if(test_round && flash_tested_round>=test_round) {
             sector_num --;
             memset(uart_info, 0x0, strlen(uart_info));
-            sprintf(uart_info, "[%d][0x%x] test %d c:pass",test_sector,addr_offset,test_round);
+            sprintf(uart_info, "[%d][0x%x] test %dc:pass",test_sector,addr_offset,test_round);
             // ESP_LOGI(TAG, "%s",uart_info);
             uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
             if(sector_num==0) {
@@ -73,9 +73,6 @@ static IRAM_ATTR void test_task(void *arg)
                 addr_offset = TEST_F_START + sector_offset;
                 flash_tested_round = 0;
             }
-        }
-        if(test_sector>sector_max){
-            test_sector = 0;
         }
         while(flash_tested_round<test_round) {
             for (int i = 0; i < BLOCK_SIZE; i++) {
@@ -92,7 +89,8 @@ static IRAM_ATTR void test_task(void *arg)
                 if(test_buff[i] != 0xFF){
                     // ESP_LOGI(TAG, "erase sector %d data err[%d/%d]: %d!=0xFF",test_sector, flash_tested_round,test_round , test_buff[i]);
                     memset(uart_info, 0x0, strlen(uart_info));
-                    sprintf(uart_info, "test sector %d:erase err[%d/%d]",test_sector, flash_tested_round,test_round);
+                    sprintf(uart_info, "[%d][0x%x] test %dc:erase err",test_sector,addr_offset,test_round);
+                    // sprintf(uart_info, "test sector %d:erase err[%d/%d]",test_sector, flash_tested_round,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
                     test_round = 0;
                     break;
@@ -110,7 +108,8 @@ static IRAM_ATTR void test_task(void *arg)
                 if(test_buff[i] != test_data[i]){
                     // ESP_LOGI(TAG, "write sector %d data err[%d/%d]: %d!=%d",test_sector, flash_tested_round,test_round , test_buff[i] , test_data[i]);
                     memset(uart_info, 0x0, strlen(uart_info));
-                    sprintf(uart_info, "test sector %d:write err[%d/%d]",test_sector, flash_tested_round,test_round);
+                    sprintf(uart_info, "[%d][0x%x] test %dc:write err",test_sector,addr_offset,test_round);
+                    // sprintf(uart_info, "test sector %d:write err[%d/%d]",test_sector, flash_tested_round,test_round);
                     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
                     test_round = 0;
                     break;
@@ -201,7 +200,13 @@ static IRAM_ATTR void uart_task(void *arg)
                     }
                 }
                 if(test_round){
-                    if(sector_num==1){
+                    if(test_sector>=(spi_flash_get_chip_size()-TEST_F_START)/BLOCK_SIZE){
+                        sprintf(uart_info, "test sector %d invalid",test_sector);
+                        test_sector = 0;
+                        test_round = 0;
+                        sector_num = 0;
+                    }
+                    else if(sector_num==1){
                         sprintf(uart_info, "ready test sector [%d][0x%x]:%d cycles",test_sector,addr_offset,test_round);
                     }
                     else sprintf(uart_info, "ready test all sector:%d cycles",test_round);
