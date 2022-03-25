@@ -27,7 +27,9 @@ jobs:
           . ~/esp/esp-idf/export.sh
           idf.py set-target esp32c3
           idf.py build
+          esptool.py --chip esp32c3 merge_bin -o test_flash_c3.bin --flash_mode dio --flash_freq 80m --flash_size 2MB 0x0 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/uart_test.bin
           mkdir ESP32-C3-BIN
+          cp test_flash_c3.bin ESP32-C3-BIN/
           cp build/partition_table/partition-table.bin ESP32-C3-BIN/partition-table.bin
           cp build/*.bin ESP32-C3-BIN/
 

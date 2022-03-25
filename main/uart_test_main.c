@@ -23,11 +23,13 @@
 
 #define BUF_SIZE        (100)
 #define TEST_F_START    (0x40000)
+// #define TEST_F_STOP     (0x40000)
 // static const char *TAG = "TEST";
 static uint16_t sector_max = 1;
 static uint16_t sector_num = 1;
 static int32_t test_sector = 0;
 static uint32_t test_round = 0;
+static size_t size_flash_chip = 0;
 static uint32_t flash_tested_round = 0;
 static uint32_t sector_offset = 0;
 static uint32_t addr_offset = TEST_F_START;
@@ -42,6 +44,9 @@ static IRAM_ATTR void test_task(void *arg)
     // const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "storage");
     // assert(partition != NULL);
     size_t size_flash_chip = spi_flash_get_chip_size();
+    #ifdef TEST_F_STOP
+    size_flash_chip = TEST_F_STOP;
+    #endif
     // size_t size_flash_chip = 0x200000;
     sector_max = (size_flash_chip-TEST_F_START)/BLOCK_SIZE;
     // sector_max = (size_flash_chip)/BLOCK_SIZE;
@@ -51,7 +56,7 @@ static IRAM_ATTR void test_task(void *arg)
         test_data[i] = i%250 + 1;
     }
     memset(uart_info, 0x0, strlen(uart_info));
-    sprintf(uart_info, "TEST FLASH [%d][%d MB]",sector_max,size_flash_chip / (1024 * 1024));
+    sprintf(uart_info, "TEST FLASH [%d][%d KB]",sector_max,size_flash_chip /1024);
     uart_write_bytes(ECHO_UART_PORT_NUM, uart_info, strlen(uart_info));
     while (1) {
         // xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
@@ -200,7 +205,7 @@ static IRAM_ATTR void uart_task(void *arg)
                     }
                 }
                 if(test_round){
-                    if(test_sector>=(spi_flash_get_chip_size()-TEST_F_START)/BLOCK_SIZE){
+                    if(test_sector>=(size_flash_chip-TEST_F_START)/BLOCK_SIZE){
                         sprintf(uart_info, "test sector %d invalid",test_sector);
                         test_sector = 0;
                         test_round = 0;
