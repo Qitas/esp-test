@@ -29,7 +29,3 @@ ready test sector 1:10
 
 在删除和写入发生错误后，就不再继续向下执行，直接报错后等待再次输入测试指令，错误会有相应错误信息输出
 
-
-```
-esptool.py --chip esp32c3 merge_bin -o test_flash_c3.bin 0x0 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/uart_test.bin
-```

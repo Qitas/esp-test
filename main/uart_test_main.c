@@ -117,7 +117,7 @@ static IRAM_ATTR void test_task(void *arg)
                 }
             }
             flash_tested_round++;
-            if(flash_tested_round%100==19) vTaskDelay(2 / portTICK_PERIOD_MS);
+            if(flash_tested_round%50==0) vTaskDelay(2 / portTICK_PERIOD_MS);
         }
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
@@ -225,5 +225,5 @@ static IRAM_ATTR void uart_task(void *arg)
 IRAM_ATTR void app_main(void)
 {
     xTaskCreate(uart_task, "uart_task", ECHO_TASK_STACK_SIZE, NULL, 5, NULL);
-    xTaskCreate(test_task, "test_task", 4096, NULL, 5, NULL);
+    xTaskCreate(test_task, "test_task", ECHO_TASK_STACK_SIZE, NULL, 5, NULL);
 }
