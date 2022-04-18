@@ -16,7 +16,6 @@ jobs:
           - 'v4.3'
         chip:
           - 'esp32c3'
-          - 'esp32'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
