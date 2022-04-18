@@ -14,6 +14,9 @@ jobs:
           - 'latest'
           - 'v4.4'
           - 'v4.3'
+        chip:
+          - 'esp32c3'
+          - 'esp32'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -22,25 +25,23 @@ jobs:
         with:
             submodules: 'recursive'
 
-      - name: ESP-IDF
-        uses: espressif/esp-idf-ci-action@main
+      - name: ESP-IDF-CI
+        uses: Qitas/idf-action@main
         with:
             esp_idf_version: ${{ matrix.version }}
-            target: esp32c3
+            target: ${{ matrix.chip }}
             path: .
 
       - name: Package
         run: |
-          esptool.py --chip esp32c3 merge_bin -o test_flash_c3.bin 0x0 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/uart_test.bin
-          mkdir ESP32-C3-BIN
-          cp test_flash_c3.bin ESP32-C3-BIN/
-          cp build/bootloader/bootloader.bin ESP32-C3-BIN/
-          cp build/partition_table/partition-table.bin ESP32-C3-BIN/
-          cp build/*.bin ESP32-C3-BIN/
-          cp build/*.elf ESP32-C3-BIN/
+          mkdir BIN
+          cp build/bootloader/bootloader.bin BIN/
+          cp build/partition_table/partition-table.bin BIN/
+          cp build/*.bin BIN/
+          cp build/*.elf BIN/
 
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
-          name: TEST-ESP32-C3-CI-BIN
-          path: ESP32-C3-CI-BIN/
+          name: test-${{ matrix.chip }}-${{ matrix.version }}
+          path: BIN/

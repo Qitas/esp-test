@@ -1,4 +1,7 @@
+
 # FLASH TEST DEMO
+
+[![Build Status](https://github.com/Qitas/ESP-TEST/workflows/ci/badge.svg)](https://github.com/Qitas/ESP-TEST/actions)
 
 在串口收发任务中，接收到启动测试指令，会对storage区域开始擦除操作，然后写入1-250连续数字序列，然后再读出数据进行比对，对比校验成功后返回相应的指令。
 
