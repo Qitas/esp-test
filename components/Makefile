@@ -7,6 +7,7 @@ AR = xtensa-esp32s3-elf-ar
 LOCAL_CFLAGS = -mlongcalls -ffunction-sections -fdata-sections -Wall -Werror=all -ggdb -O2  \
                 -fstrict-volatile-bitfields -fno-jump-tables -fno-tree-switch-conversion -std=gnu99 \
                 -I../include/ \
+                -I../build/config/ \
                -I$(IDF_PATH)/components/newlib/platform_include/ \
                -I$(IDF_PATH)/components/freertos/include/ \
                -I$(IDF_PATH)/components/freertos/include/esp_additions/freertos/ \
@@ -22,9 +23,8 @@ LOCAL_CFLAGS = -mlongcalls -ffunction-sections -fdata-sections -Wall -Werror=all
                -I$(IDF_PATH)/components/esp_system/include/ \
                -I$(IDF_PATH)/components/xtensa/include/ \
                -I$(IDF_PATH)/components/xtensa/esp32s3/include/ \
-               -I$(IDF_PATH)/components/esp_timer/include/ \
-			   -I../build/config/ \
-               -O2
+               -I$(IDF_PATH)/components/esp_timer/include/ 
+                
 
 
 obj = hello_world_lib.o
@@ -32,7 +32,7 @@ obj = hello_world_lib.o
 src = hello_world_lib.c
 
 hello_world_lib.a: $(obj)
-	$(AR) qc hello_world_lib.a $(obj)
+	$(AR) qc libhello_world_lib.a $(obj)
 	rm *.o
 
 $(obj):
