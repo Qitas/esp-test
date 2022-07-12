@@ -1,4 +1,4 @@
-# Hello World Lib
+# Hello World 
 
 在使能IDF环境后(详见idf环境配置)，通过idf.py menuconfig 配置工程可以生成依赖的文件，例如 build/config/sdkconfig.h
 

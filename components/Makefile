@@ -1,11 +1,12 @@
 
-PROJECT_NAME := hello_world_lib
+PROJECT_NAME := hello_world
 
 CC = xtensa-esp32s3-elf-gcc
 AR = xtensa-esp32s3-elf-ar
 
-LOCAL_CFLAGS = -mlongcalls -ffunction-sections -fdata-sections -Wall -Werror=all -ggdb -O2  \
-                -fstrict-volatile-bitfields -fno-jump-tables -fno-tree-switch-conversion -std=gnu99 \
+LOCAL_CFLAGS = -mlongcalls -ffunction-sections -fdata-sections -Wall -Werror=all -ggdb \
+                -fstrict-volatile-bitfields -fno-jump-tables -fno-tree-switch-conversion \
+                -std=gnu99  -O2 \
                 -I../include/ \
                 -I../build/config/ \
                -I$(IDF_PATH)/components/newlib/platform_include/ \
@@ -26,18 +27,17 @@ LOCAL_CFLAGS = -mlongcalls -ffunction-sections -fdata-sections -Wall -Werror=all
                -I$(IDF_PATH)/components/esp_timer/include/ 
                 
 
+obj = hello_world.o
 
-obj = hello_world_lib.o
+src = hello_world.c
 
-src = hello_world_lib.c
-
-hello_world_lib.a: $(obj)
-	$(AR) qc libhello_world_lib.a $(obj)
+hello_world.a: $(obj)
+	$(AR) qc lib/libhello_world.a $(obj)
 	rm *.o
 
 $(obj):
 	$(CC) $(LOCAL_CFLAGS) $(EXTRA_CFLAGS) -c $(src)
 
 clean:
-	rm hello_world_lib.a
+	rm lib/libhello_world.a
 

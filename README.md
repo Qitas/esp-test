@@ -1,2 +1,2 @@
-# Hello World Example
+# How to make a lib
 
