@@ -1,6 +1,5 @@
 
 PROJECT_NAME := hello_world
-
 CC = xtensa-esp32s3-elf-gcc
 AR = xtensa-esp32s3-elf-ar
 
@@ -14,13 +13,15 @@ obj = hello_world.o
 
 src = hello_world.c
 
+target = lib/libhello_world.a
+
 hello_world.a: $(obj)
-	$(AR) qc lib/libhello_world.a $(obj)
+	$(AR) qc $(target) $(obj)
 	rm *.o
 
 $(obj):
 	$(CC) $(LOCAL_CFLAGS) $(EXTRA_CFLAGS) -c $(src)
 
 clean:
-	rm lib/libhello_world.a
+	rm $(target)
 
